@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jable Downloader</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      width: 350px;
+      padding: 20px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .header h1 {
+      font-size: 24px;
+      margin-bottom: 5px;
+    }
+
+    .header p {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    .status {
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(10px);
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 15px;
+    }
+
+    .status-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .status-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .status-label {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    .status-value {
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+      animation: pulse 2s infinite;
+    }
+
+    .status-dot.offline {
+      background: #ef4444;
+      animation: none;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .settings {
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(10px);
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 15px;
+    }
+
+    .settings h3 {
+      font-size: 16px;
+      margin-bottom: 10px;
+    }
+
+    .form-group {
+      margin-bottom: 10px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      margin-bottom: 5px;
+      opacity: 0.9;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 5px;
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      font-size: 14px;
+    }
+
+    .form-group input::placeholder {
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    .button {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 5px;
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .button:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .button:active {
+      transform: scale(0.98);
+    }
+
+    .info {
+      font-size: 12px;
+      text-align: center;
+      opacity: 0.8;
+      margin-top: 10px;
+    }
+
+    .alert {
+      padding: 10px;
+      border-radius: 5px;
+      margin-top: 10px;
+      font-size: 13px;
+      text-align: center;
+    }
+
+    .alert.success {
+      background: rgba(16, 185, 129, 0.2);
+    }
+
+    .alert.error {
+      background: rgba(239, 68, 68, 0.2);
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>📥 Jable Downloader</h1>
+    <p>快速下載 Jable 影片</p>
+  </div>
+
+  <div class="status">
+    <div class="status-item">
+      <span class="status-label">服務器狀態</span>
+      <span class="status-value">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="statusText">檢查中...</span>
+      </span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">API 地址</span>
+      <span class="status-value" id="apiAddress">-</span>
+    </div>
+  </div>
+
+  <div class="settings">
+    <h3>⚙️ 設定</h3>
+    <div class="form-group">
+      <label for="apiUrl">API 服務器地址</label>
+      <input type="text" id="apiUrl" placeholder="http://localhost:18080">
+    </div>
+    <button class="button" id="saveBtn">保存設定</button>
+    <div id="alertBox"></div>
+  </div>
+
+  <div class="info">
+    <p>💡 在 Jable 視頻頁面點擊下載按鈕即可</p>
+    <p style="margin-top: 5px;">使用前請先啟動 jable-downloader --server</p>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

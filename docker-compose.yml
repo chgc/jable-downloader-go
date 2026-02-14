@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  jable-downloader:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: jable-downloader
+    ports:
+      - "18080:18080"
+    volumes:
+      # 將下載目錄掛載到主機
+      - ./download:/app/download
+    environment:
+      # 可選：設置環境變量
+      - TZ=Asia/Taipei
+    restart: unless-stopped
+    # 資源限制
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 512M
+    networks:
+      - jable-net
+
+networks:
+  jable-net:
+    driver: bridge

@@ -1,0 +1,13 @@
+# Docker 忽略文件
+.git
+.gitignore
+*.md
+!README.md
+download/
+*.exe
+*.log
+extension/
+.vscode/
+.idea/
+*.test
+coverage.txt

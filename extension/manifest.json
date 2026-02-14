@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "Jable Downloader",
+  "version": "1.0.0",
+  "description": "快速下載 Jable 影片到本地",
+  "permissions": [
+    "activeTab",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://jable.tv/*",
+    "http://localhost:18080/*"
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://jable.tv/videos/*"],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_end"
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  }
+}

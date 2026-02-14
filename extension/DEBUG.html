@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>擴展調試指南</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    h1 { color: #667eea; }
+    h2 { color: #764ba2; margin-top: 30px; }
+    .step {
+      background: #f5f5f5;
+      padding: 15px;
+      margin: 10px 0;
+      border-left: 4px solid #667eea;
+      border-radius: 4px;
+    }
+    .command {
+      background: #2d2d2d;
+      color: #f8f8f2;
+      padding: 10px;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      overflow-x: auto;
+    }
+    .success { color: #10b981; font-weight: bold; }
+    .error { color: #ef4444; font-weight: bold; }
+    .warning { color: #f59e0b; font-weight: bold; }
+    ul { margin: 10px 0; }
+    li { margin: 5px 0; }
+  </style>
+</head>
+<body>
+  <h1>🔍 Chrome 擴展調試指南</h1>
+  
+  <h2>問題：載入擴展後看不到下載按鈕</h2>
+
+  <h2>📋 排查步驟</h2>
+
+  <div class="step">
+    <h3>步驟 1：確認擴展已加載</h3>
+    <ol>
+      <li>訪問 <code>chrome://extensions/</code></li>
+      <li>找到「Jable Downloader」擴展</li>
+      <li>確認已啟用（開關為藍色）</li>
+      <li>確認「允許訪問文件網址」已關閉（不需要）</li>
+    </ol>
+  </div>
+
+  <div class="step">
+    <h3>步驟 2：檢查 Console 日誌</h3>
+    <ol>
+      <li>訪問 Jable 視頻頁面：<code>https://jable.tv/videos/xxx/</code></li>
+      <li>按 <code>F12</code> 打開開發者工具</li>
+      <li>切換到「Console」分頁</li>
+      <li>查找以 <code>[Jable Downloader]</code> 開頭的訊息</li>
+    </ol>
+    
+    <p><span class="success">✅ 正常狀態應該看到：</span></p>
+    <div class="command">
+[Jable Downloader] Content script loaded
+[Jable Downloader] DOM already loaded
+[Jable Downloader] Attempting to inject button
+[Jable Downloader] Found title element with selector: h4.title
+[Jable Downloader] Button injected successfully
+    </div>
+
+    <p><span class="warning">⚠️ 如果看到備用方案訊息：</span></p>
+    <div class="command">
+[Jable Downloader] Title element not found, trying fallback
+[Jable Downloader] Button injected as floating button
+    </div>
+    <p>這表示找不到標題元素，按鈕會以懸浮方式顯示在右上角。</p>
+  </div>
+
+  <div class="step">
+    <h3>步驟 3：檢查頁面結構</h3>
+    <ol>
+      <li>在開發者工具中切換到「Elements」分頁</li>
+      <li>按 <code>Ctrl+F</code>（Mac: <code>Cmd+F</code>）搜尋：<code>jable-download</code></li>
+      <li>查看是否找到 <code>jable-download-btn</code> 或 <code>jable-download-container</code></li>
+    </ol>
+
+    <p><span class="success">✅ 找到元素：</span>按鈕已注入但可能不可見（CSS 問題）</p>
+    <p><span class="error">❌ 找不到元素：</span>腳本未執行或被阻止</p>
+  </div>
+
+  <div class="step">
+    <h3>步驟 4：重新載入擴展</h3>
+    <ol>
+      <li>訪問 <code>chrome://extensions/</code></li>
+      <li>找到「Jable Downloader」</li>
+      <li>點擊「🔄 重新載入」按鈕</li>
+      <li>重新整理 Jable 頁面（<code>F5</code>）</li>
+    </ol>
+  </div>
+
+  <div class="step">
+    <h3>步驟 5：清除快取並重試</h3>
+    <ol>
+      <li>在 Jable 頁面按 <code>Ctrl+Shift+Delete</code></li>
+      <li>選擇「快取的圖片和檔案」</li>
+      <li>選擇「時間範圍：過去 1 小時」</li>
+      <li>點擊「清除資料」</li>
+      <li>重新整理頁面</li>
+    </ol>
+  </div>
+
+  <h2>🐛 常見問題解決方案</h2>
+
+  <div class="step">
+    <h3>問題 1：Console 完全沒有 [Jable Downloader] 訊息</h3>
+    <p><span class="error">原因：</span>內容腳本未執行</p>
+    <p><span class="success">解決：</span></p>
+    <ul>
+      <li>確認擴展已啟用</li>
+      <li>確認在正確的頁面（URL 包含 <code>/videos/</code>）</li>
+      <li>檢查 <code>manifest.json</code> 中的 <code>matches</code> 配置</li>
+      <li>重新載入擴展</li>
+    </ul>
+  </div>
+
+  <div class="step">
+    <h3>問題 2：按鈕注入成功但看不到</h3>
+    <p><span class="error">原因：</span>CSS 樣式問題或被其他元素遮擋</p>
+    <p><span class="success">解決：</span></p>
+    <ul>
+      <li>檢查 <code>content.css</code> 是否正確載入</li>
+      <li>在 Elements 面板查看按鈕的樣式</li>
+      <li>嘗試手動設置 <code>z-index</code> 更高的值</li>
+    </ul>
+  </div>
+
+  <div class="step">
+    <h3>問題 3：看到「Button injected as floating button」</h3>
+    <p><span class="warning">狀況：</span>找不到標題元素，使用備用方案</p>
+    <p><span class="success">結果：</span>按鈕會顯示在頁面右上角（懸浮按鈕）</p>
+    <p>這是正常的備用方案，按鈕仍可正常使用。</p>
+  </div>
+
+  <h2>🔧 手動測試</h2>
+
+  <div class="step">
+    <h3>在 Console 手動執行注入</h3>
+    <p>如果自動注入失敗，可以在 Console 手動測試：</p>
+    <div class="command">
+// 檢查按鈕是否存在
+console.log(document.getElementById('jable-download-btn'));
+
+// 檢查可能的標題元素
+console.log(document.querySelector('h4.title'));
+console.log(document.querySelector('.video-title'));
+console.log(document.querySelector('h1'));
+
+// 手動創建按鈕（簡化版）
+const btn = document.createElement('button');
+btn.textContent = '測試按鈕';
+btn.style.cssText = 'position: fixed; top: 100px; right: 20px; z-index: 9999; padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer;';
+document.body.appendChild(btn);
+    </div>
+  </div>
+
+  <h2>📞 需要進一步協助？</h2>
+
+  <div class="step">
+    <h3>提供以下信息：</h3>
+    <ul>
+      <li>Chrome 版本：訪問 <code>chrome://version/</code></li>
+      <li>Console 完整日誌（截圖）</li>
+      <li>Elements 面板中搜尋 <code>jable-download</code> 的結果</li>
+      <li>擴展管理頁面的截圖</li>
+      <li>訪問的具體 Jable 頁面 URL</li>
+    </ul>
+  </div>
+
+  <h2>✅ 成功指標</h2>
+
+  <p>如果一切正常，你應該看到：</p>
+  <ul>
+    <li>✅ Console 有 <code>[Jable Downloader]</code> 日誌</li>
+    <li>✅ 最後一條日誌是「Button injected successfully」</li>
+    <li>✅ 頁面上有紫色漸變的「📥 下載影片」按鈕</li>
+    <li>✅ 按鈕在視頻標題下方（或右上角懸浮）</li>
+    <li>✅ 點擊按鈕有反應（即使服務器未啟動也會顯示錯誤訊息）</li>
+  </ul>
+
+  <hr style="margin: 40px 0;">
+  
+  <p style="text-align: center; color: #666;">
+    Jable Downloader v1.0.0 | 
+    <a href="extension/README.md" style="color: #667eea;">完整文檔</a>
+  </p>
+</body>
+</html>

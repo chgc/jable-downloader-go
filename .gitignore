@@ -1,0 +1,49 @@
+# Binaries
+jable-downloader
+jable-downloader.exe
+jable-downloader-test
+jable-downloader-test.exe
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test binary
+*.test
+
+# Output directories
+download/
+
+# Go workspace file
+go.work
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.log
+server.log
+
+# Video segments
+*.ts
+*.m3u8
+
+# Chrome 擴展打包
+extension/*.crx
+extension/*.pem
+extension/*.zip
+
+download/
+
+# Docker
+docker-compose.override.yml
+
