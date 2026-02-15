@@ -33,19 +33,23 @@ type HealthResponse struct {
 
 // Server HTTP API 服務器
 type Server struct {
-	port       int
-	mux        *http.ServeMux
-	tasks      map[string]*DownloadTask
-	tasksMutex sync.RWMutex
+	port         int
+	mux          *http.ServeMux
+	tasks        map[string]*DownloadTask
+	tasksMutex   sync.RWMutex
+	queue        chan *DownloadTask
+	currentTask  *DownloadTask
+	currentMutex sync.RWMutex
 }
 
 // DownloadTask 下載任務
 type DownloadTask struct {
-	ID        string
-	URL       string
-	Status    string
-	CreatedAt time.Time
-	Error     string
+	ID        string    `json:"id"`
+	URL       string    `json:"url"`
+	Status    string    `json:"status"`
+	CreatedAt time.Time `json:"created_at"`
+	Error     string    `json:"error,omitempty"`
+	Convert   bool      `json:"convert"`
 }
 
 // NewServer 創建新的服務器實例
@@ -54,9 +58,22 @@ func NewServer(port int) *Server {
 		port:  port,
 		mux:   http.NewServeMux(),
 		tasks: make(map[string]*DownloadTask),
+		queue: make(chan *DownloadTask, 100),
 	}
 	s.setupRoutes()
+	s.startQueueWorker()
 	return s
+}
+
+// startQueueWorker 啟動隊列工作器
+func (s *Server) startQueueWorker() {
+	go func() {
+		for task := range s.queue {
+			s.setCurrentTask(task)
+			s.processTask(task)
+			s.setCurrentTask(nil)
+		}
+	}()
 }
 
 // setupRoutes 設置路由
@@ -125,19 +142,20 @@ func (s *Server) handleDownload(w http.ResponseWriter, r *http.Request) {
 		URL:       req.URL,
 		Status:    "queued",
 		CreatedAt: time.Now(),
+		Convert:   req.Convert,
 	}
 
 	s.tasksMutex.Lock()
 	s.tasks[taskID] = task
 	s.tasksMutex.Unlock()
 
-	// 異步執行下載
-	go s.executeDownload(task, req.Convert)
+	// 加入隊列
+	s.queue <- task
 
 	// 返回響應
 	response := DownloadResponse{
 		Success: true,
-		Message: "Download task created",
+		Message: "Download task queued",
 		TaskID:  taskID,
 	}
 
@@ -145,9 +163,10 @@ func (s *Server) handleDownload(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-// executeDownload 執行下載任務
-func (s *Server) executeDownload(task *DownloadTask, convert bool) {
+// processTask 處理下載任務
+func (s *Server) processTask(task *DownloadTask) {
 	s.updateTaskStatus(task.ID, "downloading")
+	log.Printf("Starting download for task %s: %s", task.ID, task.URL)
 
 	// 調用 downloader 包的下載函數
 	d, err := downloader.NewDownloader(task.URL)
@@ -161,7 +180,7 @@ func (s *Server) executeDownload(task *DownloadTask, convert bool) {
 	d.AutoMode = true
 	
 	// 設置轉檔模式
-	if convert {
+	if task.Convert {
 		d.EncodeMode = 1 // FastEncode - 僅轉換格式（推薦）
 	} else {
 		d.EncodeMode = 0 // NoEncode - 不轉檔
@@ -174,7 +193,14 @@ func (s *Server) executeDownload(task *DownloadTask, convert bool) {
 	}
 
 	s.updateTaskStatus(task.ID, "completed")
-	log.Printf("Download completed for %s", task.URL)
+	log.Printf("Download completed for task %s", task.ID)
+}
+
+// TasksResponse 任務列表響應
+type TasksResponse struct {
+	Tasks       []*DownloadTask `json:"tasks"`
+	CurrentTask string          `json:"current_task,omitempty"`
+	QueueLength int             `json:"queue_length"`
 }
 
 // handleTasks 獲取任務列表
@@ -191,8 +217,31 @@ func (s *Server) handleTasks(w http.ResponseWriter, r *http.Request) {
 	}
 	s.tasksMutex.RUnlock()
 
+	// 按創建時間排序（最新的在前）
+	for i := 0; i < len(tasks); i++ {
+		for j := i + 1; j < len(tasks); j++ {
+			if tasks[i].CreatedAt.Before(tasks[j].CreatedAt) {
+				tasks[i], tasks[j] = tasks[j], tasks[i]
+			}
+		}
+	}
+
+	// 獲取當前任務
+	s.currentMutex.RLock()
+	currentTaskID := ""
+	if s.currentTask != nil {
+		currentTaskID = s.currentTask.ID
+	}
+	s.currentMutex.RUnlock()
+
+	response := TasksResponse{
+		Tasks:       tasks,
+		CurrentTask: currentTaskID,
+		QueueLength: len(s.queue),
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(tasks)
+	json.NewEncoder(w).Encode(response)
 }
 
 // updateTaskStatus 更新任務狀態
@@ -214,6 +263,13 @@ func (s *Server) updateTaskError(taskID, errMsg string) {
 		task.Status = "failed"
 		task.Error = errMsg
 	}
+}
+
+// setCurrentTask 設置當前處理的任務
+func (s *Server) setCurrentTask(task *DownloadTask) {
+	s.currentMutex.Lock()
+	defer s.currentMutex.Unlock()
+	s.currentTask = task
 }
 
 // sendError 發送錯誤響應
