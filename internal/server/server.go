@@ -98,6 +98,7 @@ func (s *Server) setupRoutes() {
 	s.mux.HandleFunc("/api/health", corsMiddleware(s.handleHealth))
 	s.mux.HandleFunc("/api/download", corsMiddleware(s.handleDownload))
 	s.mux.HandleFunc("/api/tasks", corsMiddleware(s.handleTasks))
+	s.mux.HandleFunc("/api/tasks/clear-completed", corsMiddleware(s.handleClearCompletedTasks))
 }
 
 // handleHealth 健康檢查
@@ -284,12 +285,63 @@ func (s *Server) sendError(w http.ResponseWriter, message string, code int) {
 	json.NewEncoder(w).Encode(response)
 }
 
+// ClearCompletedResponse 清除已完成任務的響應
+type ClearCompletedResponse struct {
+	Success      bool   `json:"success"`
+	Message      string `json:"message"`
+	ClearedCount int    `json:"cleared_count"`
+}
+
+// handleClearCompletedTasks 清除已完成的任務
+func (s *Server) handleClearCompletedTasks(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "DELETE" && r.Method != "POST" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	s.tasksMutex.Lock()
+	defer s.tasksMutex.Unlock()
+
+	// 計算要清除的任務數量
+	clearedCount := 0
+	
+	// 獲取當前正在處理的任務 ID
+	s.currentMutex.RLock()
+	currentTaskID := ""
+	if s.currentTask != nil {
+		currentTaskID = s.currentTask.ID
+	}
+	s.currentMutex.RUnlock()
+
+	// 遍歷並刪除已完成的任務（保留正在進行中的任務）
+	for taskID, task := range s.tasks {
+		// 只刪除已完成或失敗的任務，且不是當前正在處理的任務
+		if (task.Status == "completed" || task.Status == "failed") && taskID != currentTaskID {
+			delete(s.tasks, taskID)
+			clearedCount++
+		}
+	}
+
+	response := ClearCompletedResponse{
+		Success:      true,
+		Message:      fmt.Sprintf("Successfully cleared %d completed task(s)", clearedCount),
+		ClearedCount: clearedCount,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+	
+	log.Printf("Cleared %d completed task(s)", clearedCount)
+}
+
 // Start 啟動服務器
 func (s *Server) Start() error {
 	addr := fmt.Sprintf(":%d", s.port)
 	log.Printf("🚀 API Server starting on http://localhost%s", addr)
 	log.Printf("📝 Health check: http://localhost%s/api/health", addr)
 	log.Printf("📥 Download API: http://localhost%s/api/download", addr)
+	log.Printf("📋 Tasks API: http://localhost%s/api/tasks", addr)
+	log.Printf("🗑️  Clear completed: http://localhost%s/api/tasks/clear-completed", addr)
 	
 	return http.ListenAndServe(addr, s.mux)
 }

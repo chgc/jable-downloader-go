@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const queueSection = document.getElementById('queueSection');
   const queueList = document.getElementById('queueList');
   const queueCount = document.getElementById('queueCount');
+  const clearCompletedBtn = document.getElementById('clearCompletedBtn');
 
   let refreshInterval;
   let currentApiUrl;
@@ -77,6 +78,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       t.status === 'queued' || t.status === 'downloading'
     ).length;
     queueCount.textContent = activeCount;
+
+    // 計算已完成的任務數，控制清除按鈕顯示
+    const completedCount = tasks.filter(t => 
+      t.status === 'completed' || t.status === 'failed'
+    ).length;
+    clearCompletedBtn.style.display = completedCount > 0 ? 'block' : 'none';
 
     // 渲染任務列表
     if (tasks.length === 0) {
@@ -187,6 +194,29 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     } catch (error) {
       showAlert('無效的 URL 格式', 'error');
+    }
+  });
+
+  // 清除已完成任務
+  clearCompletedBtn.addEventListener('click', async () => {
+    try {
+      const response = await fetch(`${currentApiUrl}/api/tasks/clear-completed`, {
+        method: 'DELETE',
+        signal: AbortSignal.timeout(5000)
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        showAlert(`已清除 ${data.cleared_count} 個已完成任務`, 'success');
+        
+        // 刷新隊列
+        await fetchQueue();
+      } else {
+        showAlert('清除失敗', 'error');
+      }
+    } catch (error) {
+      console.error('Failed to clear completed tasks:', error);
+      showAlert('清除失敗', 'error');
     }
   });
 

@@ -61,6 +61,31 @@ curl -X POST http://localhost:18080/api/download \
   }'
 ```
 
+### 查看任務列表
+
+```bash
+curl http://localhost:18080/api/tasks
+```
+
+### 清除已完成的任務
+
+```bash
+# 使用 DELETE 方法
+curl -X DELETE http://localhost:18080/api/tasks/clear-completed
+
+# 或使用 POST 方法
+curl -X POST http://localhost:18080/api/tasks/clear-completed
+```
+
+**響應示例：**
+```json
+{
+  "success": true,
+  "message": "Successfully cleared 5 completed task(s)",
+  "cleared_count": 5
+}
+```
+
 ### Chrome 擴展
 
 擴展默認使用 `convert: false`（不轉檔），確保最快的下載速度。
