@@ -242,7 +242,7 @@ func (d *Downloader) askEncodeMode() encoder.EncodeMode {
 		return encoder.NoEncode
 	}
 	
-	fmt.Print("選擇轉檔方案 [1:僅轉換格式(默認,推薦) 2:NVIDIA GPU 轉檔 3:CPU 轉檔]: ")
+	fmt.Print("選擇轉檔方案 [1:重新封裝(默認,推薦) 2:NVIDIA GPU 轉檔 3:CPU 轉檔]: ")
 	var mode string
 	fmt.Scanln(&mode)
 	
